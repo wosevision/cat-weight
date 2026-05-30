@@ -7,7 +7,6 @@ import { setupUpload } from "./upload.ts";
 import {
   CAT_IDS,
   CATS,
-  type CatId,
   type ViewMode,
   type WeightReading,
 } from "./types.ts";
