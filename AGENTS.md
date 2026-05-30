@@ -28,22 +28,33 @@ threshold or introduce a per-reading override UI.
   `poobox_activity_<YYYY-MM-DD>.csv`. **Treat these as read-only inputs.** Do
   not rewrite, normalize, or rename them; parse them at runtime instead.
 - `src/`
-  - `main.ts` — entrypoint; wires DOM, chart, and upload together.
-  - `types.ts` — shared types and the cat registry (`CATS`, `CAT_IDS`).
+  - `main.ts` — entrypoint; wires DOM, chart, upload, and date-range filter
+    together. Holds the small amount of UI state in module-local variables.
+  - `types.ts` — shared types and registries (`CATS`, `CAT_IDS`,
+    `DATE_RANGES`).
   - `parse.ts` — pure CSV parser. Takes raw text + an inferred export date,
     returns `RawWeightReading[]`. Handles the `a.m.`/`p.m.` and unit quirks.
   - `classify.ts` — assigns each reading to Jasper or Enzo via threshold.
-  - `aggregate.ts` — daily-median aggregation per cat.
+  - `aggregate.ts` — daily-median aggregation per cat plus a rolling-median
+    smoother used by the chart's trendline overlay.
+  - `filter.ts` — preset date-range windows (`30d`, `90d`, `1y`, `all`),
+    anchored to the latest reading rather than wall-clock `now` so old
+    datasets still render under tight windows.
   - `data-loader.ts` — Vite glob import of `data/*.csv` plus the runtime
     `File` upload reader. Also owns the dedupe pass.
   - `upload.ts` — file-input + page-wide drag-and-drop UI glue.
-  - `chart.ts` — Chart.js setup and view switching (daily median ↔ raw).
+  - `chart.ts` — Chart.js setup. Builds two views (daily median, raw
+    readings), renders min/max range bands and a 7-day rolling-median
+    trendline in the daily view, owns the zoom/pan plugin wiring, and
+    reacts to OS-level `prefers-color-scheme` changes.
   - `stats.ts` — per-cat summary numbers shown beside the chart.
-  - `style.css` — all styles. Plain CSS, no preprocessor.
+  - `style.css` — all styles. Plain CSS, no preprocessor; auto dark mode via
+    `prefers-color-scheme`.
 - `index.html` — single page, references `/src/main.ts` as a module.
-- `package.json` — npm metadata. Vite is the dev server / bundler; Chart.js is
-  the visualization library; `chartjs-adapter-date-fns` provides the time-axis
-  date adapter. Prefer adding new deps only when clearly needed.
+- `package.json` — npm metadata. Vite is the dev server / bundler; Chart.js
+  is the visualization library; `chartjs-adapter-date-fns` provides the
+  time-axis date adapter; `chartjs-plugin-zoom` enables drag/wheel zoom and
+  pan. Prefer adding new deps only when clearly needed.
 - `tsconfig.json` — strict TypeScript, `noEmit` (Vite handles transpilation;
   `npm run typecheck` checks types).
 - `README.md` — human-facing overview.
@@ -72,16 +83,20 @@ file in `data/`. Known quirks:
 ## Conventions
 
 - TypeScript with `strict` on. New modules use `.ts` and explicit `.ts`
-  imports (the bundler resolves them; this keeps the source consistent with
-  Node's ESM resolution rules).
+  imports (the bundler resolves them; `allowImportingTsExtensions` is on in
+  `tsconfig.json`).
 - ES modules (`"type": "module"` in `package.json`).
 - No global state libraries until there's a real need. `src/main.ts` keeps
   the small amount of UI state it needs in module-local variables.
-- Keep CSV parsing pure: a function that takes text + the inferred export date
-  and returns a typed array. No DOM, no fetch, no globals — easy to unit-test
-  later.
+- Keep data transforms pure (`parse.ts`, `classify.ts`, `aggregate.ts`,
+  `filter.ts`): functions that take inputs and return arrays/records. No
+  DOM, no fetch, no globals — easy to unit-test later. The DOM/Chart.js
+  stuff lives in `main.ts`, `chart.ts`, and `upload.ts`.
 - Time math runs in the user's local timezone (matching the CSV's local-time
   semantics). `aggregate.ts#localIsoDate` is the canonical day-key formatter.
+- Chart datasets are tagged with a small `meta: { catId, kind }` blob in
+  `chart.ts`. Use `meta.kind` (not the `label`) when filtering legend items
+  or branching tooltip text — labels are user-facing and may change.
 
 ## Things to avoid
 

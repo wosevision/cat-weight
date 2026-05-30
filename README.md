@@ -12,6 +12,22 @@ npm run dev
 
 Then open the URL Vite prints (usually [http://localhost:5173](http://localhost:5173)).
 
+## Features
+
+- **Daily median view** with a translucent min/max range band and a 7-day
+  rolling-median trendline overlay per cat — smooths the day-to-day noise
+  caused by mid-deposit scale readings.
+- **Raw readings view** that scatters every parsed weight, useful for
+  inspecting individual events.
+- **Date-range presets** (All / 1Y / 90D / 30D), anchored to the most recent
+  reading so old datasets still render.
+- **Drag-zoom and pan** on the chart (wheel/pinch to zoom, Alt-drag to
+  box-zoom, Shift-drag to pan). A "Reset zoom" button appears once you've
+  zoomed.
+- **Auto dark mode** following the OS `prefers-color-scheme`.
+- **CSV upload** via button or page-wide drag-and-drop, deduped against
+  bundled data.
+
 ## How data flows in
 
 There are two ways to load CSV exports:
@@ -50,10 +66,13 @@ A few quirks worth knowing about:
 
 ## Stack
 
-- [Vite](https://vitejs.dev/) — dev server and bundler.
+- [Vite](https://vitejs.dev/) — dev server and bundler. Requires Node
+  20.19+ or 22.12+.
 - [TypeScript](https://www.typescriptlang.org/) — strict mode.
 - [Chart.js](https://www.chartjs.org/) + `chartjs-adapter-date-fns` — chart
   rendering with a time-aware x-axis.
+- [`chartjs-plugin-zoom`](https://www.chartjs.org/chartjs-plugin-zoom/) —
+  drag/wheel zoom and pan.
 
 See [`AGENTS.md`](./AGENTS.md) for a tour of the source layout and the small
 pile of CSV-format gotchas.
